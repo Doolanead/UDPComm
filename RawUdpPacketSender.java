@@ -7,7 +7,9 @@ import org.jnetpcap.protocol.lan.Ethernet;
 import org.jnetpcap.protocol.network.Ip4;
 import org.jnetpcap.protocol.tcpip.Udp;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.ByteOrder;
@@ -25,15 +27,81 @@ public class RawUdpPacketSender {
     private int UDP_SOURCE_PORT = 7006;
     private byte[] sourceMacAddress;
     private byte[] destinationMacAddress;
-    private String interfaz = "h1-eth0";
+    private static String interfaz = "h1-eth0";
+    private String IPdst = null;
     
+    public static String getMAC(String ip, String mascara ) {
+		String nmap = "nmap -sn " + ip + "/" + mascara;
+		String arp = "arp -a ";
+		Process p1,p2;
+
+		try {
+			System.out.println(nmap + "\n" + arp + "\n" + interfaz ); 
+			//p1 = Runtime.getRuntime().exec(nmap);
+			//p1.waitFor();
+			p2 = Runtime.getRuntime().exec(arp); 
+			p2.waitFor();
+			
+			BufferedReader reader = new BufferedReader(new InputStreamReader(p2.getInputStream()));
+
+			String line = "";
+			while ((line = reader.readLine()) != null) {
+				if( line.contains("("+ip+")") ){
+					String[] datos = line.split(" ");
+					for (int i = 0; i < datos.length; i++){
+						if ( datos[i].split(":").length == 6 ){					
+							return datos[i];
+						}
+					}
+					break;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+    
+    public static boolean validIP (String ip) {
+        try {
+            if ( ip == null || ip.isEmpty() ) {
+                return false;
+            }
+
+            String[] parts = ip.split( "\\." );
+            if ( parts.length != 4 ) {
+                return false;
+            }
+
+            for ( String s : parts ) {
+                int i = Integer.parseInt( s );
+                if ( (i < 0) || (i > 255) ) {
+                    return false;
+                }
+            }
+            if ( ip.endsWith(".") ) {
+                return false;
+            }
+
+            return true;
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+    }
+    
+    public void setIPdst( String ip ){
+    	String macAddress;
+    	if ( validIP(ip) ){
+    		if ( ( macAddress = getMAC(ip, "24")) == null )
+    			macAddress = System.getProperty("gateway_mac_address", "");
+    		destinationMacAddress = hexStringToByteArray(macAddress.replaceAll(":", ""));
+    		System.out.println(macAddress);
+    	}
+    	else
+    		System.exit(-1);;
+    }
     
     public RawUdpPacketSender() {
-       //String macAddress = System.getProperty("gateway_mac_address", "");
-       
-	String macAddress = "b2bed1c54b12";
-	//Destination MAC address needs to be configured. This can be retrieved using ARP, but it's not easy
-        destinationMacAddress = hexStringToByteArray(macAddress);
         try {
             pcap = createPcap();
         } catch (IOException e) {
@@ -180,6 +248,7 @@ private byte[] getLocalIP(){
     public static void main(String[] args) throws IOException {
         RawUdpPacketSender sender = new RawUdpPacketSender();
         byte[] packet = "Hello".getBytes();
+        sender.setIPdst("10.0.0.2");
         URI destination = URI.create("udp://10.0.0.2:9876");
         sender.sendPacket(destination, packet);
     }
