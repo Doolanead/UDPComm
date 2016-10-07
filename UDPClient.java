@@ -15,7 +15,9 @@ class UDPClient
       //Leemos IP Destino
       System.out.print("Introduzca IP Destino: ");
       String ip = inFromUser.readLine();
-      DatagramSocket clientSocket = new DatagramSocket();
+      System.out.print("Introduzca Puerto Origen: ");
+      int srcport = Integer.parseInt(inFromUser.readLine());
+      DatagramSocket clientSocket = new DatagramSocket(srcport);
       InetAddress IPAddress = InetAddress.getByName(ip);
       
       //Se lee y envia paquete
