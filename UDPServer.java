@@ -8,7 +8,7 @@ class UDPServer
 	   System.out.println("Inicia Servidor...");
          DatagramSocket serverSocket = new DatagramSocket(9876);
             byte[] receiveData = new byte[1024];
-            byte[] sendData = new byte[1024];
+            byte[] sendData;
             while(true)
                {
                 //Recibe paquete
@@ -17,8 +17,9 @@ class UDPServer
                   serverSocket.receive(receivePacket);
                   
                   //Pasa a String
-                  String sentence = new String( receivePacket.getData());
-                  System.out.println("RECEIVED: " + sentence);
+                  String sentence = new String( receivePacket.getData(),
+			receivePacket.getOffset(),receivePacket.getLength());
+                  System.out.println("RECEIVED: " + sentence + "-"+sentence.length());
                   
                   //Se devuelve
                   InetAddress IPAddress = receivePacket.getAddress();
@@ -26,7 +27,7 @@ class UDPServer
                   String capitalizedSentence = sentence.toUpperCase();
                   sendData = capitalizedSentence.getBytes();
                   DatagramPacket sendPacket =
-                  new DatagramPacket(sendData, capitalizedSentence.length(), IPAddress, port);
+                  new DatagramPacket(sendData, sentence.intern().length(), IPAddress, port);
                   serverSocket.send(sendPacket);
                   receiveData = new byte[1024];
                }
