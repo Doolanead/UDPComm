@@ -14,7 +14,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.List;
+import java.util.*;
+import java.net.*;
 
 public class RawUdpPacketSender {
     private static Logger logger = Logger.getLogger(RawUdpPacketSender.class.getName());
@@ -24,12 +25,14 @@ public class RawUdpPacketSender {
     private int UDP_SOURCE_PORT = 7006;
     private byte[] sourceMacAddress;
     private byte[] destinationMacAddress;
-    private String interfaz = "wlp3s0";
+    private String interfaz = "h1-eth0";
     
     
     public RawUdpPacketSender() {
-        String macAddress = System.getProperty("gateway_mac_address", "");
-        //Destination MAC address needs to be configured. This can be retrieved using ARP, but it's not easy
+       //String macAddress = System.getProperty("gateway_mac_address", "");
+       
+	String macAddress = "b2bed1c54b12";
+	//Destination MAC address needs to be configured. This can be retrieved using ARP, but it's not easy
         destinationMacAddress = hexStringToByteArray(macAddress);
         try {
             pcap = createPcap();
@@ -110,7 +113,8 @@ public class RawUdpPacketSender {
         Ip4 ip4 = packet.getHeader(new Ip4());
         ip4.type(Ip4.Ip4Type.UDP);
         ip4.length(packetSize - ethernet.size());
-        byte[] sourceAddress = InetAddress.getLocalHost().getAddress();
+	System.out.println(InetAddress.getLocalHost().getHostAddress());
+        byte[] sourceAddress = getLocalIP();
         ip4.source(sourceAddress);
         ip4.destination(destinationAddress);
         ip4.ttl(32);
@@ -134,6 +138,35 @@ public class RawUdpPacketSender {
         }
     }
 
+private byte[] getLocalIP(){
+
+	byte[] a;
+	String ip;
+    try {
+	a = InetAddress.getLocalHost().getAddress();
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface iface = interfaces.nextElement();
+            // filters out 127.0.0.1 and inactive interfaces
+            if (iface.isLoopback() || !iface.isUp())
+                continue;
+
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            while(addresses.hasMoreElements()) {
+                InetAddress addr = addresses.nextElement();
+                ip = addr.getHostAddress();
+                if( iface.getDisplayName().equals(interfaz) && !ip.equals(InetAddress.getLoopbackAddress()) ){
+	a = addr.getAddress();
+	System.out.println(a);
+            }
+        }}
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+	return a;
+}
+
+
     private byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -147,7 +180,7 @@ public class RawUdpPacketSender {
     public static void main(String[] args) throws IOException {
         RawUdpPacketSender sender = new RawUdpPacketSender();
         byte[] packet = "Hello".getBytes();
-        URI destination = URI.create("udp://192.168.2.103:9876");
+        URI destination = URI.create("udp://10.0.0.2:9876");
         sender.sendPacket(destination, packet);
     }
 }
