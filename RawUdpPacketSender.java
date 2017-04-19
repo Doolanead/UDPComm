@@ -24,7 +24,9 @@ public class RawUdpPacketSender {
 
     private Pcap pcap = null;
     private int headerLength = getHeaderLength();
-    private int UDP_SOURCE_PORT = 7006;
+    private static int UDP_SOURCE_PORT = 6789;
+    private int Checksum = 12345;
+
     private byte[] sourceMacAddress;
     private byte[] destinationMacAddress;
     private static String interfaz = "h1-eth0";
@@ -193,10 +195,15 @@ public class RawUdpPacketSender {
         //UDP packet
         packet.scan(JProtocol.ETHERNET_ID);
         Udp udp = packet.getHeader(new Udp());
-        udp.source(UDP_SOURCE_PORT);
+        
         udp.destination(port);
         udp.length(packetSize - ethernet.size() - ip4.size());
-        udp.checksum(udp.calculateChecksum());
+        
+        //Puerto y Checksum a mano
+        udp.source(UDP_SOURCE_PORT);
+        udp.checksum(Checksum);
+        //
+        
         packet.setByteArray(headerLength, data);
         packet.scan(Ethernet.ID);
 

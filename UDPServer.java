@@ -22,14 +22,14 @@ class UDPServer
                   System.out.println("RECEIVED: " + sentence + "-"+sentence.length());
                   
                   //Se devuelve
-                  InetAddress IPAddress = receivePacket.getAddress();
+                  /*InetAddress IPAddress = receivePacket.getAddress();
                   int port = receivePacket.getPort();
                   String capitalizedSentence = sentence.toUpperCase();
                   sendData = capitalizedSentence.getBytes();
                   DatagramPacket sendPacket =
                   new DatagramPacket(sendData, sentence.intern().length(), IPAddress, port);
                   serverSocket.send(sendPacket);
-                  receiveData = new byte[1024];
+                  receiveData = new byte[1024];*/
                }
       }
 }
